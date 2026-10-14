@@ -1,0 +1,58 @@
+name: Extract Android Project
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract-project:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check ZIP file
+        run: |
+          test -f unified-dose-android-starter.zip
+
+      - name: Extract project
+        run: |
+          mkdir -p /tmp/unified-dose-project
+          unzip -o unified-dose-android-starter.zip \
+            -d /tmp/unified-dose-project
+
+          test -f /tmp/unified-dose-project/settings.gradle
+          test -f /tmp/unified-dose-project/app/build.gradle
+          test -f /tmp/unified-dose-project/app/src/main/AndroidManifest.xml
+
+      - name: Copy project files
+        run: |
+          cp -a /tmp/unified-dose-project/. .
+
+      - name: Verify project
+        run: |
+          test -f settings.gradle
+          test -f app/build.gradle
+          test -f app/src/main/AndroidManifest.xml
+          test -f app/src/main/java/com/unifieddose/app/MainActivity.kt
+          test -f .github/workflows/build-apk.yml
+
+          echo "Project verification successful."
+
+      - name: Commit extracted files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Extract Android starter project"
+            git push
+          else
+            echo "No changes to commit."
+          fi
